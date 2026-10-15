@@ -1,101 +1,146 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "AEMET",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Official weather for Spain (AEMET): forecasts, nearby station, Meteoalerta warnings by town.",
+    "fr": "Météo officielle de l'Espagne (AEMET) : prévisions, station proche, avertissements Meteoalerta.",
+    "de": "Offizielles Wetter für Spanien (AEMET): Vorhersagen, Messstation, Meteoalerta-Warnungen pro Ort.",
+    "es": "El tiempo oficial de AEMET: previsiones, estación cercana y avisos Meteoalerta por municipio."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "docker_image": "ghcr.io/guim31/gladys-aemet:1.0.0",
+  "gladys_version": ">=5.2.0",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-aemet/main/cover.png",
+  "categories": ["environment"],
+  "transports": ["cloud"],
+  "location": true,
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "AEMET OpenData API key",
+        "fr": "Clé d'API AEMET OpenData",
+        "de": "API-Schlüssel von AEMET OpenData",
+        "es": "Clave de API de AEMET OpenData"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "The AEMET key is free: enter your email address on the AEMET OpenData page below, open the link you receive, and the key arrives by email a moment later. The integration reads AEMET every 30 minutes (warnings: every 10 minutes) to stay within the quota of the key. Not affiliated with AEMET.",
+        "fr": "La clé AEMET est gratuite : saisissez votre adresse e-mail sur la page AEMET OpenData ci-dessous, ouvrez le lien reçu, et la clé arrive par e-mail peu après. L'intégration interroge AEMET toutes les 30 minutes (avertissements : toutes les 10 minutes) pour rester dans le quota de la clé. Non affiliée à l'AEMET.",
+        "de": "Der AEMET-Schlüssel ist kostenlos: Gib deine E-Mail-Adresse auf der AEMET-OpenData-Seite unten ein, öffne den erhaltenen Link, und der Schlüssel kommt kurz darauf per E-Mail. Die Integration fragt AEMET alle 30 Minuten ab (Warnungen: alle 10 Minuten), um im Kontingent des Schlüssels zu bleiben. Nicht mit AEMET verbunden.",
+        "es": "La clave de AEMET es gratuita: introduzca su dirección de correo en la página de AEMET OpenData indicada abajo, abra el enlace recibido y la clave llegará por correo poco después. La integración consulta AEMET cada 30 minutos (avisos: cada 10 minutos) para respetar la cuota de la clave. Sin relación con AEMET."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://opendata.aemet.es/centrodedescargas/altaUsuario",
+          "label": {
+            "en": "Get an AEMET API key",
+            "fr": "Obtenir une clé AEMET",
+            "de": "AEMET-Schlüssel anfordern",
+            "es": "Obtener una clave de AEMET"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key",
+        "fr": "Clé d'API",
+        "de": "API-Schlüssel",
+        "es": "Clave de API"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "required": true
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "towns",
+      "type": "string",
+      "label": {
+        "en": "Towns (INE codes)",
+        "fr": "Communes (codes INE)",
+        "de": "Gemeinden (INE-Codes)",
+        "es": "Municipios (códigos INE)"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "Five-digit INE codes, separated by commas: one device per town, five at most. The action \"Find the nearest town\" fills it from a Gladys house.",
+        "fr": "Codes INE à cinq chiffres, séparés par des virgules : un appareil par commune, cinq au plus. L'action « Trouver la commune la plus proche » le remplit depuis une maison Gladys.",
+        "de": "Fünfstellige INE-Codes, durch Kommas getrennt: ein Gerät pro Gemeinde, höchstens fünf. Die Aktion „Nächste Gemeinde finden“ füllt das Feld anhand eines Gladys-Zuhauses aus.",
+        "es": "Códigos INE de cinco cifras, separados por comas: un dispositivo por municipio, cinco como máximo. La acción «Buscar el municipio más cercano» lo rellena a partir de una casa de Gladys."
+      },
+      "placeholder": {
+        "en": "e.g. 28079, 07040",
+        "fr": "ex. 28079, 07040",
+        "de": "z. B. 28079, 07040",
+        "es": "p. ej. 28079, 07040"
+      },
+      "required": false,
+      "default": ""
     },
     {
-      "key": "unit",
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Language of the device texts",
+        "fr": "Langue des textes des appareils",
+        "de": "Sprache der Gerätetexte",
+        "es": "Idioma de los textos de los dispositivos"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Feature names (set when the device is added), sky states, warnings and scene texts.",
+        "fr": "Noms des fonctionnalités (fixés à l'ajout de l'appareil), état du ciel, avertissements et textes de scène.",
+        "de": "Namen der Funktionen (beim Hinzufügen des Geräts festgelegt), Himmelszustand, Warnungen und Szenentexte.",
+        "es": "Nombres de las funciones (fijados al añadir el dispositivo), estado del cielo, avisos y textos de escenas."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": { "en": "English", "fr": "Anglais", "de": "Englisch", "es": "Inglés" }
+        },
+        {
+          "value": "fr",
+          "label": { "en": "French", "fr": "Français", "de": "Französisch", "es": "Francés" }
+        },
+        {
+          "value": "de",
+          "label": { "en": "German", "fr": "Allemand", "de": "Deutsch", "es": "Alemán" }
+        },
+        {
+          "value": "es",
+          "label": { "en": "Spanish", "fr": "Espagnol", "de": "Spanisch", "es": "Español" }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "timeout_seconds": 60
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "find_town",
+      "label": {
+        "en": "Find the nearest town",
+        "fr": "Trouver la commune la plus proche",
+        "de": "Nächste Gemeinde finden",
+        "es": "Buscar el municipio más cercano"
+      },
+      "timeout_seconds": 90,
       "fields": [
         {
-          "key": "device",
+          "key": "house",
           "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "source": "houses",
+          "label": { "en": "House", "fr": "Maison", "de": "Zuhause", "es": "Casa" },
           "required": true
         }
       ]
@@ -103,75 +148,224 @@
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "warning_issued",
+      "label": {
+        "en": "New AEMET warning",
+        "fr": "Nouvel avertissement AEMET",
+        "de": "Neue AEMET-Warnung",
+        "es": "Nuevo aviso de AEMET"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "AEMET issued a Meteoalerta warning for the town, or raised its level. Fires once per warning, even days ahead.",
+        "fr": "L'AEMET a émis un avertissement Meteoalerta pour la commune, ou en a relevé le niveau. Une seule fois par avertissement, même plusieurs jours avant.",
+        "de": "AEMET hat eine Meteoalerta-Warnung für die Gemeinde ausgegeben oder ihre Stufe erhöht. Einmal pro Warnung, auch Tage im Voraus.",
+        "es": "AEMET ha emitido un aviso Meteoalerta para el municipio, o ha subido su nivel. Una sola vez por aviso, incluso con días de antelación."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": { "en": "Town", "fr": "Commune", "de": "Gemeinde", "es": "Municipio" }
         },
         {
-          "key": "target",
+          "key": "level",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": { "en": "Level", "fr": "Niveau", "de": "Stufe", "es": "Nivel" },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "yellow",
+              "label": { "en": "Yellow", "fr": "Jaune", "de": "Gelb", "es": "Amarillo" }
+            },
+            {
+              "value": "orange",
+              "label": { "en": "Orange", "fr": "Orange", "de": "Orange", "es": "Naranja" }
+            },
+            {
+              "value": "red",
+              "label": { "en": "Red", "fr": "Rouge", "de": "Rot", "es": "Rojo" }
+            }
+          ]
+        },
+        {
+          "key": "phenomenon",
+          "type": "multi_select",
+          "label": { "en": "Phenomenon", "fr": "Phénomène", "de": "Ereignis", "es": "Fenómeno" },
+          "options": [
+            {
+              "value": "rain",
+              "label": { "en": "Rain", "fr": "Pluie", "de": "Regen", "es": "Lluvias" }
+            },
+            {
+              "value": "snow",
+              "label": { "en": "Snow", "fr": "Neige", "de": "Schnee", "es": "Nevadas" }
+            },
+            {
+              "value": "wind",
+              "label": { "en": "Wind", "fr": "Vent", "de": "Wind", "es": "Vientos" }
+            },
+            {
+              "value": "thunderstorm",
+              "label": {
+                "en": "Thunderstorms",
+                "fr": "Orages",
+                "de": "Gewitter",
+                "es": "Tormentas"
+              }
+            },
+            {
+              "value": "heat",
+              "label": {
+                "en": "High temperatures",
+                "fr": "Fortes chaleurs",
+                "de": "Hohe Temperaturen",
+                "es": "Temperaturas máximas"
+              }
+            },
+            {
+              "value": "cold",
+              "label": {
+                "en": "Low temperatures",
+                "fr": "Grand froid",
+                "de": "Tiefe Temperaturen",
+                "es": "Temperaturas mínimas"
+              }
+            },
+            {
+              "value": "coastal",
+              "label": {
+                "en": "Coastal events",
+                "fr": "Phénomènes côtiers",
+                "de": "Küstenereignisse",
+                "es": "Fenómenos costeros"
+              }
+            },
+            {
+              "value": "fog",
+              "label": { "en": "Fog", "fr": "Brouillard", "de": "Nebel", "es": "Nieblas" }
+            },
+            {
+              "value": "dust",
+              "label": {
+                "en": "Dust",
+                "fr": "Poussières",
+                "de": "Staub",
+                "es": "Polvo en suspensión"
+              }
+            },
+            {
+              "value": "avalanche",
+              "label": { "en": "Avalanches", "fr": "Avalanches", "de": "Lawinen", "es": "Aludes" }
+            },
+            {
+              "value": "rissaga",
+              "label": { "en": "Rissaga", "fr": "Rissaga", "de": "Rissaga", "es": "Rissagas" }
+            },
+            {
+              "value": "thaw",
+              "label": { "en": "Thaw", "fr": "Dégel", "de": "Tauwetter", "es": "Deshielos" }
+            },
+            {
+              "value": "other",
+              "label": {
+                "en": "Other phenomenon",
+                "fr": "Autre phénomène",
+                "de": "Anderes Ereignis",
+                "es": "Otro fenómeno"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "town",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
-        }
-      ]
-    }
-  ],
-  "scene_actions": [
-    {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
-      },
-      "timeout_seconds": 15,
-      "fields": [
+          "label": { "en": "Town", "fr": "Commune", "de": "Gemeinde", "es": "Municipio" }
+        },
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
-      "outputs": [
+          "key": "level",
+          "type": "string",
+          "label": {
+            "en": "Level (yellow, orange, red)",
+            "fr": "Niveau (yellow, orange, red)",
+            "de": "Stufe (yellow, orange, red)",
+            "es": "Nivel (yellow, orange, red)"
+          }
+        },
         {
-          "key": "signalled",
+          "key": "summary",
+          "type": "string",
+          "label": {
+            "en": "Summary (level, phenomenon, period)",
+            "fr": "Résumé (niveau, phénomène, période)",
+            "de": "Zusammenfassung (Stufe, Ereignis, Zeitraum)",
+            "es": "Resumen (nivel, fenómeno, periodo)"
+          }
+        },
+        {
+          "key": "headline",
+          "type": "string",
+          "label": {
+            "en": "AEMET headline (Spanish)",
+            "fr": "Titre AEMET (espagnol)",
+            "de": "AEMET-Überschrift (Spanisch)",
+            "es": "Titular de AEMET"
+          }
+        },
+        {
+          "key": "onset",
+          "type": "string",
+          "label": {
+            "en": "Start (ISO)",
+            "fr": "Début (ISO)",
+            "de": "Beginn (ISO)",
+            "es": "Inicio (ISO)"
+          }
+        },
+        {
+          "key": "expires",
+          "type": "string",
+          "label": { "en": "End (ISO)", "fr": "Fin (ISO)", "de": "Ende (ISO)", "es": "Fin (ISO)" }
+        },
+        {
+          "key": "in_force",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Already in force",
+            "fr": "Déjà en cours",
+            "de": "Bereits aktiv",
+            "es": "Ya en vigor"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "forecast",
+      "label": {
+        "en": "AEMET forecast",
+        "fr": "Prévisions AEMET",
+        "de": "AEMET-Vorhersage",
+        "es": "Previsión de AEMET"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Current values, the next days and the Meteoalerta warnings of a town.",
+        "fr": "Valeurs actuelles, prochains jours et avertissements Meteoalerta d'une commune.",
+        "de": "Aktuelle Werte, die nächsten Tage und die Meteoalerta-Warnungen einer Gemeinde.",
+        "es": "Valores actuales, próximos días y avisos Meteoalerta de un municipio."
+      },
+      "icon": "cloud",
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": { "en": "Town", "fr": "Commune", "de": "Gemeinde", "es": "Municipio" },
+          "required": true
+        }
+      ]
     }
   ]
 }

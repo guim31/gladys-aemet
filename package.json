@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-aemet",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Gladys Assistant integration for AEMET, the Spanish weather agency: forecasts, observations and Meteoalerta warnings.",
   "type": "module",
   "main": "index.js",
   "scripts": {
