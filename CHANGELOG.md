@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-15
+
 ### Added
 
 - One read-only device per Spanish town (up to five, by INE code), from AEMET
@@ -30,4 +32,5 @@ the notes of the version's GitHub Release.
   station every 30 minutes, warnings every 10 minutes.
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/guim31/gladys-aemet/commits/main
+[Unreleased]: https://github.com/guim31/gladys-aemet/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-aemet/releases/tag/v1.0.1
