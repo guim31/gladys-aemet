@@ -16,12 +16,13 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "warning" # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
 npx github:GladysAssistant/integration-store .   # store admission checks
+node scripts/probe.mjs [INE] [--save dir] # the real AEMET API (AEMET_API_KEY), read only
 ```
 
 The CI (`.github/workflows/ci.yml`) runs `format:check`, `lint` and `test` on
@@ -32,15 +33,21 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/app.js                        registers every SDK handler on the hub (tests drive the same wiring)
+src/hub.js                        per-town cache, internal timer, states, "new warning" trigger, actions
+src/devices.js                    the town device (features, external ids) and its states
+src/widgets.js                    dashboard widget "forecast" (manifest `widgets`)
+src/aemet/client.js               two-step AEMET OpenData client (envelope, then `datos`)
+src/aemet/forecast.js             hourly/daily forecasts, observations, nearest station/town
+src/aemet/warnings.js             Meteoalerta CAP files: tar/gzip extraction, parsing, town matching
+src/aemet/geo.js                  distances, polygons, town time zone (Madrid / Canary)
+src/i18n.js                       every text, in en/fr/de/es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js, src/issues.js       /data persistence, logged-once failures
+scripts/probe.mjs                 read-only probe of the real API (never prints the key)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, against the SDK's fake Gladys and a fake AEMET
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +77,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, widget content, feature names, and
+  `docs/{en,fr,de,es}.md`, kept in sync. `test/i18n.test.js` enforces it.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +241,45 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## AEMET OpenData (propre à cette intégration)
+
+- **Deux temps** : chaque endpoint renvoie `{ descripcion, estado, datos, metadatos }`, et `datos` est l'URL des
+  données, à télécharger ensuite. Deux requêtes par lecture, toutes deux comptées dans le quota de la clé.
+  Le statut est **aussi dans l'enveloppe** (`estado: 401` peut arriver dans une réponse HTTP 200). `maestro/
+municipio/id<INE>` répond directement un tableau, sans `datos`.
+- **Clé dans l'en-tête `api_key`**, jamais dans l'URL. Ne suivre l'URL `datos` que vers
+  `https://opendata.aemet.es/`.
+- **Encodage** : les fichiers `datos` sont en ISO-8859-15, souvent sans charset déclaré. Décoder en UTF-8 donne
+  « Legan�s ». Les fixtures de Home Assistant ont déjà perdu ces lettres (caractère `�`).
+- **Heures** : les prévisions sont en heure locale de la commune, sans décalage (`fecha` + `periodo` "07") ;
+  les Canaries (provinces 35 et 38) ont une heure de retard sur Madrid. Le conteneur suit le fuseau de Gladys,
+  qui peut être ailleurs : `src/aemet/geo.js` convertit. Les observations (`fint`) sont en UTC sans `Z`.
+- **Unités** : prévisions en km/h ; observations `vv`/`vmax` en **m/s** (Home Assistant les affiche à tort en
+  km/h). `"Ip"` = précipitation inappréciable (0). `"-0"` existe.
+- **probPrecipitacion** horaire par fenêtres de 6 h (`0107`, `0713`, `1319`, `1901`) ; entre 00:00 et 01:00 la
+  fenêtre est le `1901` **de la veille**. Au quotidien, le `00-24` du jour peut rester à 0 quand `12-24` vaut
+  100 : prendre le maximum des périodes.
+- **Avertissements** : `avisos_cap/ultimoelaborado/area/<région>` sert une archive tar (parfois gzip) de
+  fichiers CAP 1.2, un par zone et phénomène, avec des blocs `<info>` es-ES et en-GB. Niveau dans le paramètre
+  `AEMET-Meteoalerta nivel` (verde/amarillo/naranja/rojo), phénomène dans l'eventCode
+  `AEMET-Meteoalerta fenomeno` (`VI;Vientos`), zone dans le geocode `AEMET-Meteoalerta zona` (6 chiffres).
+  **La zone est la `zona_comarcal` du maître des communes**, et ses deux premiers chiffres sont la région à
+  demander (61 Andalousie … 79 Melilla) : pas de table province → région à maintenir. Sans avertissement,
+  l'endpoint répond 404 « No hay datos » : c'est une liste vide, pas une erreur. Les fichiers CAP de test sont
+  **reconstruits** d'après l'annexe CAP du plan Meteoalerta (session sans accès à AEMET) : les remplacer par de
+  vrais fichiers (`scripts/probe.mjs --save`).
+- **Avertissements côtiers** : zones littorales distinctes de la zone terrestre d'une commune, non rattachées.
+- **Déclencheur « nouvel avertissement »** : clé zone|phénomène|jour de début, niveau mémorisé dans `/data`.
+  Première lecture d'une commune = tout est « connu » (pas d'annonce à l'installation) ; une hausse de niveau
+  ré-annonce.
+- **Quota** : la limite exacte par clé n'est pas documentée publiquement de façon stable ; l'en-tête
+  `Remaining-request-count` la donne parfois (le client le garde, la sonde l'affiche). Cadence retenue :
+  prévisions et station 30 min, avertissements 10 min par région, ~24 requêtes/h par commune.
+- `observacion/convencional/todas` pèse plusieurs Mo (12 h de toutes les stations) : seulement pour trouver la
+  station la plus proche, mise en cache 30 jours dans `/data`. `maestro/municipios` (~2 Mo) seulement pour
+  l'action « Trouver la commune la plus proche ».
+- **Action qui écrit la config** (`find_town` → `setConfig({ towns })`) : le formulaire ouvert n'est pas
+  rechargé ; le message demande de recharger la page, sinon un « Enregistrer » renverrait l'ancienne valeur.
+- Le fake Gladys du SDK 0.15 expose les handlers dans `gladys.handlers` (`action:<key>`, `widget:<key>`), pas
+  dans `gladys.fake.handlers`, et l'ack d'une action est `{ data: { message } }`.

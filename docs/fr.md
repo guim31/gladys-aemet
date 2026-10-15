@@ -1,67 +1,151 @@
-# Template de démonstration
+# AEMET
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+La météo officielle de l'**Espagne** dans Gladys, depuis **AEMET OpenData**, le service de données ouvertes de
+l'Agence nationale de météorologie espagnole : la prévision de l'heure en cours, les extrêmes du jour, les
+**avertissements Meteoalerta** (jaune, orange, rouge) et l'observation de la station météo la plus proche, pour
+la péninsule, les Baléares, les Canaries, Ceuta et Melilla. Pensée pour les maisons de vacances et les
+frontaliers.
 
-## Ce que vous obtenez
+Cette intégration n'est pas affiliée à l'AEMET. Elle a été développée sans compte AEMET sous la main, sur des
+réponses réelles publiées de l'API : vos retours sont les bienvenus.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Présentation
+
+- **Un appareil par commune** (cinq au plus), en lecture seule.
+- **Prévision de l'heure en cours** : température, ressenti, humidité, vent, rafales, direction du vent,
+  probabilité de pluie, pluie prévue sur l'heure, ciel (traduit).
+- **Aujourd'hui** : indice UV (maximum du jour), températures minimale et maximale.
+- **Avertissements** : niveau en cours, niveau le plus haut à venir, et un texte qui les liste.
+- **Station** : température, humidité, pression, pluie de la dernière heure et vent mesurés à la station AEMET
+  la plus proche (40 km au plus).
+- Un **widget** de tableau de bord et un **déclencheur de scène** « Nouvel avertissement AEMET ».
+
+## Prérequis
+
+- Gladys **5.2.0** ou plus récent (l'action « Trouver la commune la plus proche » choisit une maison Gladys).
+- Une **clé d'API AEMET OpenData**, gratuite.
+- Un accès Internet depuis Gladys : l'intégration ne parle qu'à `opendata.aemet.es`.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+### Clé d'API
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Ouvrez [la demande de clé AEMET OpenData](https://opendata.aemet.es/centrodedescargas/altaUsuario), saisissez
+votre adresse e-mail et résolvez le captcha. L'AEMET envoie un lien de confirmation, puis la clé elle-même par
+e-mail peu après : un long texte qui commence par `eyJ`. Collez-la dans le champ **Clé d'API**.
 
-## Actions
+### Communes
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+Le champ **Communes** prend les **codes INE** à cinq chiffres des communes, séparés par des virgules (`28079`
+pour Madrid, `07040` pour Palma). Le code figure dans l'adresse de la page de la commune sur aemet.es
+(`…/madrid-id28079`) : cette adresse peut être collée telle quelle. Cinq communes au plus.
 
-## Scènes
+Pour éviter la recherche, l'action **Trouver la commune la plus proche** prend une maison Gladys (sa position
+se règle dans les paramètres de Gladys) et ajoute la commune espagnole la plus proche au champ. Rechargez la
+page pour la voir, puis ajoutez l'appareil depuis l'onglet **Découverte**.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+L'action **Tester la connexion** vérifie la clé et nomme chaque commune et sa station.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+### Langue
 
-## Tableau de bord
+Le champ **Langue** règle la langue des noms de fonctionnalités (figés à l'ajout de l'appareil : supprimez et
+ajoutez de nouveau l'appareil pour les renommer), de l'état du ciel, des avertissements et des textes de scène.
+Français par défaut. Le widget suit la langue de chaque utilisateur.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+## L'appareil de la commune
+
+Chaque commune donne un appareil **AEMET <commune>**, avec ces fonctionnalités.
+
+### Prévisions
+
+| Fonctionnalité                                                    | Unité      |
+| ----------------------------------------------------------------- | ---------- |
+| Température (prévision), ressenti                                 | °C         |
+| Humidité (prévision)                                              | %          |
+| Vent, rafales (prévision)                                         | km/h       |
+| Direction du vent (d'où il vient, 0 = nord ; rien par vent calme) | °          |
+| Probabilité de pluie (la tranche de 6 heures de l'heure en cours) | %          |
+| Pluie de l'heure (prévision)                                      | mm         |
+| Ciel (texte, par ex. « Couvert avec neige »)                      |            |
+| Indice UV (max du jour), minimale du jour, maximale du jour       | indice, °C |
+
+La prévision est celle que l'AEMET publie pour la commune, heure par heure : les valeurs changent chaque heure,
+même entre deux relevés.
+
+### Avertissements
+
+| Fonctionnalité                     | Valeurs                                                               |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| Niveau d'avertissement actuel      | 0 aucun, 1 jaune, 2 orange, 3 rouge : les avertissements en cours     |
+| Avertissement le plus haut à venir | même échelle, avertissements en cours et annoncés                     |
+| Avertissements                     | texte, par ex. « Rouge: Neige; Orange: Grand froid (dès lun. 00:00) » |
+
+Une commune reçoit les avertissements de sa zone Meteoalerta (la `zona_comarcal` que l'AEMET donne à la
+commune).
+
+### Observation de la station
+
+Température, humidité, pression (au niveau de la mer quand la station la calcule), pluie de la dernière heure et
+vent moyen de la station la plus proche, à moins de 40 km. Un relevé de plus de trois heures n'est pas publié.
+
+## Rafraîchissement et quota
+
+L'AEMET limite les requêtes de chaque clé, et chaque relevé coûte deux requêtes (l'AEMET répond par l'adresse
+des données, téléchargées ensuite). L'intégration lit, pour chaque commune ajoutée à Gladys :
+
+- les prévisions toutes les **30 minutes** ;
+- la station toutes les **30 minutes** (un relevé par heure à l'AEMET) ;
+- les avertissements toutes les **10 minutes**, une fois par région pour toutes ses communes.
+
+Soit environ 24 requêtes par heure et par commune. Après un échec, la tentative suivante attend 5 minutes, 15
+après un refus de quota. Seules les valeurs qui changent sont envoyées à Gladys, et chaque valeur au moins
+toutes les 6 heures. L'intégration se rafraîchit d'elle-même : elle ne dépend pas de l'interrogation par Gladys.
+
+## Widget du tableau de bord
+
+**Prévisions AEMET** : choisissez la commune dans les réglages. Il montre en direct la température, la
+probabilité de pluie, le vent et l'UV, les cinq prochains jours (ciel, min / max, probabilité de pluie) et les
+avertissements, dans la langue de l'utilisateur. Pas de bouton.
+
+## Déclencheur de scène : nouvel avertissement AEMET
+
+Se déclenche une fois par avertissement, dès que l'AEMET le publie, même plusieurs jours avant, et de nouveau
+quand l'AEMET en relève le niveau. Les avertissements déjà en cours au démarrage de l'intégration, ou à l'ajout
+d'une commune, ne sont pas annoncés.
+
+Filtres (tous facultatifs) : **commune**, **niveau** (jaune, orange, rouge), **phénomène** (pluie, neige, vent,
+orages, fortes chaleurs, grand froid, phénomènes côtiers, brouillard, poussières, avalanches, rissaga, dégel,
+autre).
+
+Informations transmises à la scène : commune, niveau (`yellow`, `orange`, `red`), résumé (niveau, phénomène et
+période dans la langue configurée), titre AEMET (en espagnol), début et fin (ISO), déjà en cours.
+
+## Exemples de scènes
+
+- **Me prévenir d'un avertissement orange ou rouge à la maison de vacances** : déclencheur « Nouvel
+  avertissement AEMET », commune = la maison, niveau = orange, rouge ; action « Envoyer un message » avec le
+  résumé.
+- **Fermer les volets avant une tempête** : déclencheur « Nouvel avertissement AEMET », phénomène = vent,
+  niveau = orange, rouge ; puis fermer les volets.
+- **Alerte gel** : déclencheur sur la fonctionnalité « Minimale du jour » sous 0 °C, envoyer un message le soir.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« AEMET a refusé la clé d'API »** : vérifiez la clé (une seule ligne, sans espace) ; demandez-en une
+  nouvelle si besoin.
+- **« AEMET limite les requêtes de cette clé »** : la clé est partagée avec un autre outil, ou il y a trop de
+  communes : les relevés reprennent d'eux-mêmes.
+- **Aucun appareil dans Découverte** : lancez **Tester la connexion** ; un code erroné y est nommé.
+- **Pas de valeurs de station** : aucune station AEMET à moins de 40 km, ou ses relevés sont en retard.
+- **Journaux** : l'intégration n'écrit que les erreurs et son cycle de vie ; réglez `LOG_LEVEL=debug` pour voir
+  chaque relevé. La clé n'est jamais écrite.
+
+## Limites
+
+- Espagne seulement (la couverture de l'AEMET).
+- Les avertissements côtiers concernent des zones littorales, distinctes de la zone terrestre d'une commune :
+  ils peuvent ne pas atteindre une commune du bord de mer.
+- La station la plus proche est choisie automatiquement et peut mal représenter une commune de montagne.
+- Les noms des fonctionnalités sont figés à l'ajout de l'appareil.
+- Développée sans compte AEMET : les fichiers d'avertissement ont été construits d'après le format CAP que
+  l'AEMET documente. Vos retours sont les bienvenus.

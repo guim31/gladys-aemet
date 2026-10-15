@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>2.49.0.0.724.0.ES.20210108083000.722802VIAM0801</identifier>
+  <sender>http://www.aemet.es</sender>
+  <sent>2021-01-08T09:30:00+01:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>es-ES</language>
+    <category>Met</category>
+    <event>Aviso de vientos de nivel amarillo</event>
+    <responseType>Monitor</responseType>
+    <urgency>Future</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <eventCode>
+      <valueName>AEMET-Meteoalerta fenomeno</valueName>
+      <value>VI;Vientos</value>
+    </eventCode>
+    <effective>2021-01-08T09:30:00+01:00</effective>
+    <onset>2021-01-08T12:00:00+01:00</onset>
+    <expires>2021-01-08T23:59:59+01:00</expires>
+    <senderName>AEMET. Agencia Estatal de Meteorología</senderName>
+    <headline>Aviso amarillo por vientos. Metropolitana y Henares</headline>
+    <description>Espesor de nieve acumulada en 24 horas: 20 cm.</description>
+    <instruction></instruction>
+    <web>https://www.aemet.es/es/eltiempo/prediccion/avisos</web>
+    <contact>https://www.aemet.es/</contact>
+    <parameter>
+      <valueName>AEMET-Meteoalerta nivel</valueName>
+      <value>amarillo</value>
+    </parameter>
+    <parameter>
+      <valueName>AEMET-Meteoalerta probabilidad</valueName>
+      <value>40%-70%</value>
+    </parameter>
+    <area>
+      <areaDesc>Metropolitana y Henares</areaDesc>
+      <polygon>40.62,-3.92 40.62,-3.20 40.05,-3.20 40.05,-3.92 40.62,-3.92</polygon>
+      <geocode>
+        <valueName>AEMET-Meteoalerta zona</valueName>
+        <value>722802</value>
+      </geocode>
+    </area>
+  </info>
+  <info>
+    <language>en-GB</language>
+    <category>Met</category>
+    <event>Yellow wind warning</event>
+    <responseType>Monitor</responseType>
+    <urgency>Future</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <eventCode>
+      <valueName>AEMET-Meteoalerta fenomeno</valueName>
+      <value>VI;Vientos</value>
+    </eventCode>
+    <onset>2021-01-08T12:00:00+01:00</onset>
+    <expires>2021-01-08T23:59:59+01:00</expires>
+    <headline>Yellow wind warning. Metropolitana y Henares</headline>
+    <parameter>
+      <valueName>AEMET-Meteoalerta nivel</valueName>
+      <value>amarillo</value>
+    </parameter>
+    <area>
+      <areaDesc>Metropolitana y Henares</areaDesc>
+      <polygon>40.62,-3.92 40.62,-3.20 40.05,-3.20 40.05,-3.92 40.62,-3.92</polygon>
+    </area>
+  </info>
+</alert>

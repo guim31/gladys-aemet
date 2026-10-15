@@ -1,61 +1,144 @@
-# Demo Devices Template
+# AEMET
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+The official weather of **Spain** in Gladys, from **AEMET OpenData**, the open data service of the Spanish
+State Meteorological Agency: the forecast of the current hour, today's extremes, the **Meteoalerta warnings**
+(yellow, orange, red) and the observation of the nearest weather station, for the mainland, the Balearic and
+Canary Islands, Ceuta and Melilla. Made for holiday homes and cross-border residents.
 
-## What you get
+This integration is not affiliated with AEMET. It was developed without an AEMET account at hand, against
+real published answers of the API: feedback welcome.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## Overview
+
+- **One device per town** (up to five), read only.
+- **Forecast of the current hour**: temperature, feels-like, humidity, wind, gusts, wind direction, chance of
+  rain, rain expected this hour, sky (translated).
+- **Today**: UV index (daily maximum), minimum and maximum temperatures.
+- **Warnings**: level in force now, highest level ahead, and a text listing them.
+- **Station**: temperature, humidity, pressure, rain over the last hour and wind measured at the nearest AEMET
+  station (40 km at most).
+- A **dashboard widget** and a **scene trigger** "New AEMET warning".
+
+## Requirements
+
+- Gladys **5.2.0** or later (the "Find the nearest town" action picks a Gladys house).
+- A free **AEMET OpenData API key**.
+- Internet access from Gladys: the integration only talks to `opendata.aemet.es`.
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+### API key
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+Open [the AEMET OpenData key request](https://opendata.aemet.es/centrodedescargas/altaUsuario), enter your
+email address and solve the captcha. AEMET sends a confirmation link, then the key itself by email a moment
+later: a long text starting with `eyJ`. Paste it into the **API key** field.
 
-## Actions
+### Towns
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+The **Towns** field takes the five-digit **INE codes** of the towns, separated by commas (`28079` for Madrid,
+`07040` for Palma). The code is in the address of the town page on aemet.es (`…/madrid-id28079`): that address
+can be pasted as is. Five towns at most.
 
-## Scenes
+To skip the search, the **Find the nearest town** action takes a Gladys house (its position is set in Gladys
+settings) and adds the nearest Spanish town to the field. Reload the page to see it, then add the device from
+the **Discovery** tab.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+The **Test the connection** action checks the key and names each town and its station.
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+### Language
 
-## Dashboard
+The **Language** field sets the language of the feature names (frozen when the device is added: delete and
+add the device again to rename them), of the sky states, of the warnings and of the scene texts. French by
+default. The widget follows the language of each user.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+## The town device
+
+Each town gives a device **AEMET <town>**, with these features.
+
+### Forecast
+
+| Feature                                                         | Unit      |
+| --------------------------------------------------------------- | --------- |
+| Temperature (forecast), feels like                              | °C        |
+| Humidity (forecast)                                             | %         |
+| Wind, wind gusts (forecast)                                     | km/h      |
+| Wind direction (where it comes from, 0 = north; none when calm) | °         |
+| Chance of rain (the 6-hour window of the current hour)          | %         |
+| Rain this hour (forecast)                                       | mm        |
+| Sky (text, e.g. "Overcast with snow")                           |           |
+| UV index (today's max), minimum today, maximum today            | index, °C |
+
+The forecast is the one AEMET publishes for the town, hour by hour: the values change every hour, even between
+two readings.
+
+### Warnings
+
+| Feature               | Values                                                            |
+| --------------------- | ----------------------------------------------------------------- |
+| Warning level now     | 0 none, 1 yellow, 2 orange, 3 red: the warnings in force          |
+| Highest warning ahead | same scale, warnings in force and announced ones                  |
+| Warnings              | text, e.g. "Red: Snow; Orange: Low temperatures (from Mon 00:00)" |
+
+A town gets the warnings of its Meteoalerta zone (the `zona_comarcal` AEMET gives the town).
+
+### Station observation
+
+Temperature, humidity, pressure (sea level when the station computes it), rain over the last hour and mean
+wind of the nearest station, within 40 km. A reading older than three hours is not published.
+
+## Refresh and quota
+
+AEMET limits the requests of each key, and each reading takes two requests (AEMET answers with the address of
+the data, downloaded next). The integration reads, for each town added to Gladys:
+
+- the forecasts every **30 minutes**;
+- the station every **30 minutes** (one reading per hour at AEMET);
+- the warnings every **10 minutes**, once per region for all its towns.
+
+That is about 24 requests an hour per town. After a failure, the next attempt waits 5 minutes, 15 after a
+quota refusal. Only the values that changed are sent to Gladys, and every value at least every 6 hours. The
+integration refreshes by itself: it does not depend on the polling of Gladys.
+
+## Dashboard widget
+
+**AEMET forecast**: pick the town in the settings. It shows the temperature, chance of rain, wind and UV live,
+the next five days (sky, min / max, chance of rain) and the warnings, in the user's language. No buttons.
+
+## Scene trigger: new AEMET warning
+
+Fires once per warning, as soon as AEMET publishes it, even days ahead, and again when AEMET raises its level.
+The warnings already in force when the integration starts, or when a town is added, are not announced.
+
+Filters (all optional): **town**, **level** (yellow, orange, red), **phenomenon** (rain, snow, wind,
+thunderstorms, high and low temperatures, coastal events, fog, dust, avalanches, rissaga, thaw, other).
+
+Information passed on to the scene: town, level (`yellow`, `orange`, `red`), summary (level, phenomenon and
+period in the configured language), AEMET headline (Spanish), start and end (ISO), already in force.
+
+## Scene examples
+
+- **Warn me of an orange or red warning at the holiday home**: trigger "New AEMET warning", town = the house,
+  level = orange, red; action "Send a message" with the summary.
+- **Close the shutters before a wind storm**: trigger "New AEMET warning", phenomenon = wind, level = orange,
+  red; then close the shutters.
+- **Frost alert**: trigger on the "Minimum today" feature below 0 °C, send a message in the evening.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"AEMET refused the API key"**: check the key (one line, no space); request a new one if needed.
+- **"AEMET limits the requests of this key"**: the key is shared with another tool, or too many towns: the
+  readings resume on their own.
+- **No device in Discovery**: run **Test the connection**; a wrong code is named there.
+- **No station values**: no AEMET station within 40 km, or its readings are late.
+- **Logs**: the integration only writes errors and its lifecycle; set `LOG_LEVEL=debug` to see every reading.
+  The key is never logged.
+
+## Limits
+
+- Spain only (AEMET's coverage).
+- Coastal warnings concern coastal zones, distinct from the land zone of a town: they may not reach a seaside
+  town.
+- The nearest station is chosen automatically and may not represent a town in the mountains.
+- The feature names are frozen when the device is added.
+- Developed without an AEMET account: the warning files were built after the CAP format AEMET documents.
+  Feedback welcome.

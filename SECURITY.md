@@ -30,6 +30,23 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration handles:
+
+- **The AEMET OpenData API key**, stored by Gladys in the integration
+  configuration. It travels only in the `api_key` header of the requests to
+  `https://opendata.aemet.es`, never in a URL, and is never written to the
+  logs. The `datos` URLs AEMET returns are only followed when they point to
+  `https://opendata.aemet.es/` itself.
+- **`/data/aemet-state.json`**, the only file written: the master data of the
+  configured towns (public), their nearest station, and the warnings already
+  announced. No secret, no personal data.
+- **The coordinates of the Gladys houses** (manifest `location: true`), read
+  only when the user runs "Find the nearest town", to pick the nearest town.
+  They are not stored nor sent anywhere: the search runs in the container
+  against the public town list.
+- **Network**: outgoing HTTPS to `opendata.aemet.es` only. No port is opened,
+  nothing is listened to.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and AEMET OpenData.

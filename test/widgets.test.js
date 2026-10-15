@@ -1,77 +1,73 @@
+// -----------------------------------------------------------------------------
+// The "AEMET forecast" widget: within the core budget (validateWidgetContent
+// of the SDK), every live tile bound to a feature the device really has, and
+// localized from the language the core passes.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { WIDGET_KEY } from '../src/hub.js';
+import { createWorld } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+async function content(gladys, settings, language = 'en') {
+  const ack = await gladys.fake.widgetGet(WIDGET_KEY, { settings, language, units: 'metric' });
+  assert.equal(ack.success, true);
+  return ack.data.content;
+}
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
-
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
-
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
+test('the widget fits the core budget, its tiles are features of the device', async () => {
+  const { gladys, hub } = await createWorld();
+  const [device] = gladys.fake.discoveredDevices;
+  const featureIds = new Set(device.features.map((f) => f.external_id));
+  for (const language of ['en', 'fr', 'de', 'es']) {
+    const widget = await content(gladys, { device: device.external_id }, language);
+    assert.deepEqual(validateWidgetContent(widget), [], language);
+    assert.equal(widget.components.length, 8);
+    for (const component of widget.components.filter((c) => c.device_feature)) {
+      assert.ok(featureIds.has(component.device_feature), component.device_feature);
+    }
   }
+  await hub.stop();
 });
 
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('the widget shows the next days and the warnings, in the user language', async () => {
+  const { gladys, hub } = await createWorld();
+  const [device] = gladys.fake.discoveredDevices;
+  const widget = await content(gladys, { device: device.external_id }, 'es');
+  const days = widget.components.find((c) => c.type === 'card-list');
+  assert.equal(days.items.length, 5);
+  assert.deepEqual(days.items[0], {
+    title: 'Hoy',
+    subtitle: 'Cubierto con nieve · -1° / 2°',
+    badge: { text: '100 %', color: 'info' },
+  });
+  assert.equal(days.items[1].title, 'dom 10');
+  const status = widget.components.find((c) => c.type === 'status');
+  assert.deepEqual(
+    status.items.map((i) => [i.label, i.value, i.color]),
+    [
+      ['Rojo: Nevadas', 'en vigor', 'danger'],
+      ['Naranja: Temperaturas mínimas', 'desde lun, 00:00', 'danger'],
+    ],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
+  await hub.stop();
 });
 
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
-});
+test('without a town, or before the first reading, the widget says what to do', async () => {
+  const { gladys, hub } = await createWorld();
+  let widget = await content(gladys, {}, 'de');
+  assert.deepEqual(validateWidgetContent(widget), []);
+  assert.match(widget.components[0].text, /Wähle eine AEMET-Gemeinde/);
 
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
-  );
-});
+  widget = await content(gladys, { device: gladys.externalId('town:99999') }, 'fr');
+  assert.match(widget.components[0].text, /Choisissez une commune/);
+  await hub.stop();
 
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+  const empty = await createWorld({ create: false });
+  widget = await content(empty.gladys, {
+    device: empty.gladys.fake.discoveredDevices[0].external_id,
+  });
+  assert.match(widget.components[0].text, /No AEMET data yet/);
+  await empty.hub.stop();
 });
