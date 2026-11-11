@@ -22,7 +22,7 @@ réponses réelles publiées de l'API : vos retours sont les bienvenus.
 
 ## Prérequis
 
-- Gladys **5.2.0** ou plus récent (l'action « Trouver la commune la plus proche » choisit une maison Gladys).
+- Gladys **5.3.0** ou plus récent (l'action « Trouver la commune la plus proche » choisit une maison Gladys).
 - Une **clé d'API AEMET OpenData**, gratuite.
 - Un accès Internet depuis Gladys : l'intégration ne parle qu'à `opendata.aemet.es`.
 

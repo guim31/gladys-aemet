@@ -30,7 +30,7 @@ Texts in English, French, German and Spanish. The full user documentation is in 
 
 ## Requirements
 
-- Gladys **5.2.0** or later.
+- Gladys **5.3.0** or later.
 - A free AEMET OpenData API key:
   [request it here](https://opendata.aemet.es/centrodedescargas/altaUsuario) (it arrives by email).
 - Internet access from Gladys (`opendata.aemet.es` only).
