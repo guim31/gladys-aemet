@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-13
+
 ### Changed
 
 - Declared for Spain only (`countries: ["ES"]`): the Gladys catalog of an
@@ -38,5 +40,6 @@ the notes of the version's GitHub Release.
   station every 30 minutes, warnings every 10 minutes.
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/guim31/gladys-aemet/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/guim31/gladys-aemet/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/guim31/gladys-aemet/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/guim31/gladys-aemet/releases/tag/v1.0.1
