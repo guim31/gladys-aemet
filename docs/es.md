@@ -21,7 +21,7 @@ reales publicadas de la API: sus comentarios son bienvenidos.
 
 ## Requisitos
 
-- Gladys **5.2.0** o posterior (la acción «Buscar el municipio más cercano» elige una casa de Gladys).
+- Gladys **5.3.0** o posterior (la acción «Buscar el municipio más cercano» elige una casa de Gladys).
 - Una **clave de API de AEMET OpenData**, gratuita.
 - Acceso a Internet desde Gladys: la integración solo se comunica con `opendata.aemet.es`.
 

@@ -21,7 +21,7 @@ real published answers of the API: feedback welcome.
 
 ## Requirements
 
-- Gladys **5.2.0** or later (the "Find the nearest town" action picks a Gladys house).
+- Gladys **5.3.0** or later (the "Find the nearest town" action picks a Gladys house).
 - A free **AEMET OpenData API key**.
 - Internet access from Gladys: the integration only talks to `opendata.aemet.es`.
 

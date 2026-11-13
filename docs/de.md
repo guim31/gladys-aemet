@@ -21,7 +21,7 @@ veröffentlichter Antworten der API: Rückmeldungen sind willkommen.
 
 ## Voraussetzungen
 
-- Gladys **5.2.0** oder neuer (die Aktion „Nächste Gemeinde finden“ wählt ein Gladys-Zuhause).
+- Gladys **5.3.0** oder neuer (die Aktion „Nächste Gemeinde finden“ wählt ein Gladys-Zuhause).
 - Ein kostenloser **API-Schlüssel von AEMET OpenData**.
 - Internetzugang für Gladys: Die Integration spricht nur mit `opendata.aemet.es`.
 
